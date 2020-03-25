@@ -28,7 +28,7 @@ def get_clues(row_or_col_num, clues, is_row=True):
     #   12      x   x   x   x       7
     #
     #           11  10  9   8
-    n = int(len(clues) ** (1/2))
+    n = len(clues) // 4
     ind_diff = 3 * n - 1
     if is_row:
         # for rows, we need to add n
@@ -59,6 +59,7 @@ def is_clue_satisfied(line, clue_lt, clue_rb):
         return False
 
 def is_valid(cand, coord, board, clues):
+    n = len(clues) // 4
     row, col = coord
     if cand in board[row] or cand in column(board, col):
         return None
@@ -68,12 +69,12 @@ def is_valid(cand, coord, board, clues):
     if 0 in cand_board[row] and 0 in column(cand_board, col):
         return cand_board
     # TODO: col == 0 ?
-    if col == 3:
+    if col == n-1:
         # TODO: calculating clue every time
         clue_lt_rb = get_clues(row, clues, is_row=True)
         is_valid_row = is_clue_satisfied(cand_board[row], *clue_lt_rb)
     # TODO: row == 0 ?
-    if row == 3:
+    if row == n-1:
         clue_lt_rb = get_clues(col, clues, is_row=False)
         is_valid_col = is_clue_satisfied(column(cand_board, col), *clue_lt_rb)
 
@@ -83,13 +84,12 @@ def is_valid(cand, coord, board, clues):
         return None
 
 def solve_puzzle(clues, board=None):
-    n = int(len(clues) ** (1/2))
+    n = len(clues) // 4
     if not board:
         board = [[0] * n for i in range(n)]
     coord = next_empty(board)
     if not coord:
         a = tuple(tuple(row) for row in board)
-        print(a)
         return a
     else:
         for cand in range(1, n+1):
@@ -106,7 +106,7 @@ def solve_puzzle(clues, board=None):
 
 
 if __name__ == "__main__":
-    clues = (
+    clues4 = (
         ( 2, 2, 1, 3,
           2, 2, 3, 1,
           1, 2, 2, 3,
@@ -116,7 +116,7 @@ if __name__ == "__main__":
           0, 3, 0, 0,
           0, 1, 0, 0 )
     )
-    outcomes = (
+    outcomes4 = (
         ( ( 1, 3, 4, 2 ),
           ( 4, 2, 1, 3 ),
           ( 3, 4, 2, 1 ),
@@ -126,6 +126,26 @@ if __name__ == "__main__":
           ( 4, 2, 3, 1 ),
           ( 1, 3, 2, 4 ) )
     )
-    correct = [solve_puzzle(clues[i]) == outcomes[i] for i in
-               range(len(clues))]
+    #correct = [solve_puzzle(clues[i]) == outcomes[i] for i in
+    #           range(len(clues))]
+    #print(correct)
+
+    clues6 = (
+        ( 3, 2, 2, 3, 2, 1,
+          1, 2, 3, 3, 2, 2,
+          5, 1, 2, 2, 4, 3,
+          3, 2, 1, 2, 2, 4 )
+    )
+    outcomes6 = (
+        ( ( 2, 1, 4, 3, 5, 6 ),
+          ( 1, 6, 3, 2, 4, 5 ),
+          ( 4, 3, 6, 5, 1, 2 ),
+          ( 6, 5, 2, 1, 3, 4 ),
+          ( 5, 4, 1, 6, 2, 3 ),
+          ( 3, 2, 5, 4, 6, 1 ) )
+    )
+
+    correct = solve_puzzle(clues6) == outcomes6
+    print(correct)
+
 
