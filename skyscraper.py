@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 
 from copy import deepcopy
+from itertools import permutations
 from collections import defaultdict
 
-def next_empty(board):
-    for i, row in enumerate(board):
-        for j, val in enumerate(row):
-            if val == 0:
-                return (i, j)
-    return False
 
-def column(board, j):
-    return [row[j] for row in board]
+def column(matrix, j):
+    return [row[j] for row in matrix]
 
 def get_clues(row_or_col_num, clues, is_row=True):
     # first, assume the board is square
@@ -32,12 +27,80 @@ def get_clues(row_or_col_num, clues, is_row=True):
     ind_diff = 3 * n - 1
     if is_row:
         # for rows, we need to add n
-        clue_lt = n + ind_diff - row_or_col_num
-        clue_rb = n + row_or_col_num
+        clue_lt_ind = n + ind_diff - row_or_col_num
+        clue_rb_ind = n + row_or_col_num
     else:
-        clue_lt = row_or_col_num
-        clue_rb = ind_diff - row_or_col_num
-    return clues[clue_lt], clues[clue_rb]
+        clue_lt_ind = row_or_col_num
+        clue_rb_ind = ind_diff - row_or_col_num
+    return clues[clue_lt_ind], clues[clue_rb_ind]
+
+def possible_lines(n, clue_lt, clue_rb):
+    # find what lines are possible given two clues
+    perm = permutations([i for i in range(1, n+1)])
+    possible = []
+    for p in perm:
+        if is_clue_satisfied(p, clue_lt, clue_rb):
+            possible.append(list(p))
+    return possible
+
+def line_values(row_or_col_num, clues, is_row=True):
+    # return a dictionary of index-value pairs
+    n = len(clues) // 4
+    clue_lt, clue_rb = get_clues(row_or_col_num, clues, is_row=is_row)
+    possible = possible_lines(n, clue_lt, clue_rb)
+    pos_vals = {}
+    for j in range(n):
+        vals = set(column(possible, j))
+        index = (row_or_col_num, j)[::(2 * is_row) - 1]
+        pos_vals[index] = vals
+    return pos_vals
+
+def possible_values(clues):
+    n = len(clues) // 4
+    row_clues = []
+    col_clues = []
+    row_vals = {}
+    col_vals = {}
+    #for i in range(n):
+    #    row_clues.append(get_clues(i, clues, is_row=True))
+    #    col_clues.append(get_clues(i, clues, is_row=False))
+    for i in range(n):
+        row_vals.update(line_values(i, clues, is_row=True))
+        col_vals.update(line_values(i, clues, is_row=False))
+    #all_vals = {(i, j): set(k for k in range(1, n+1)) for i in range(n) for j in
+    #            range(n)}
+    pos_vals = {}
+    sort_list = lambda x: sorted(list(x))
+    for i in range(n):
+        for j in range(n):
+            ij = (i, j)
+            if ij in row_vals and ij in col_vals:
+                vals = row_vals[ij] & col_vals[ij]
+            elif ij in row_vals:
+                vals = pos_vals[ij]
+            else:
+                vals = col_vals[ij]
+            pos_vals[ij] = sort_list(vals)
+    return pos_vals
+
+def obvious_board(clues):
+    n = len(clues) // 4
+    board = [[0] * n for i in range(n)]
+    pos_vals = possible_values(clues)
+    for (i, j), v in pos_vals.items():
+        if len(v) == 1:
+            board[i][j] = v[0]
+    return board
+
+def next_empty(board):
+    for i, row in enumerate(board):
+        for j, val in enumerate(row):
+            if val == 0:
+                return (i, j)
+    return False
+
+def next_empty_smart(board, clues):
+    pass
 
 def is_clue_satisfied(line, clue_lt, clue_rb):
     seen_lt = seen_rb = 0
@@ -86,7 +149,8 @@ def is_valid(cand, coord, board, clues):
 def solve_puzzle(clues, board=None):
     n = len(clues) // 4
     if not board:
-        board = [[0] * n for i in range(n)]
+        #board = [[0] * n for i in range(n)]
+        board = obvious_board(clues)
     coord = next_empty(board)
     if not coord:
         a = tuple(tuple(row) for row in board)
@@ -147,5 +211,8 @@ if __name__ == "__main__":
 
     correct = solve_puzzle(clues6) == outcomes6
     print(correct)
+
+    #print(obvious_board(clues6))
+    #print(line_values(0, clues4[0], is_row=False))
 
 
