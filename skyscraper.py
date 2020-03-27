@@ -111,6 +111,18 @@ def possible_values(clues):
             pos_vals[ij] = sort_list(vals)
     return pos_vals, num_vals
 
+def update_possible_values(index, value, n, pos_vals):
+    i, j = index
+    #print(pos_vals)
+    pos_vals_ = deepcopy(pos_vals)
+    for k in range(n):
+        if value in pos_vals_[(i, k)]:
+            pos_vals_[(i, k)].remove(value)
+        if value in pos_vals_[(k, j)]:
+            pos_vals_[(k, j)].remove(value)
+    pos_vals_[index] = [value]
+    return pos_vals_
+
 def obvious_board(clues):
     n = len(clues) // 4
     board = [[0] * n for i in range(n)]
@@ -130,7 +142,7 @@ def next_empty(board):
 
 def smart_cell_order(board, clues, obvious=True):
     if 0 not in [x for row in board for x in row]:
-        return []
+        return [], {}
     bins = defaultdict(list)
     pos_vals, num_vals = possible_values(clues)
     line_order = [k for k, _ in sorted(num_vals.items(), key=lambda x: x[1])]
@@ -150,7 +162,7 @@ def smart_cell_order(board, clues, obvious=True):
         order += line_ord
     if obvious:
         order = list(filter(lambda x: len(pos_vals[x]) > 1, order))
-    return order
+    return order, pos_vals
 
 def smart_cell_order_old(board, clues, obvious=True):
     bins = defaultdict(list)
@@ -202,14 +214,10 @@ def is_valid(cand, coord, board, clues):
     if 0 not in column(cand_board, col):
         #print(column(cand_board, col))
         is_col_full = True
-    # TODO: col == 0 ?
-    #if col == n-1:
     if is_row_full:
         # TODO: calculating clue every time
         clue_lt_rb = get_clues(row, clues, is_row=True)
         is_valid_row = is_clue_satisfied(cand_board[row], *clue_lt_rb)
-    # TODO: row == 0 ?
-    #if row == n-1:
     if is_col_full:
         clue_lt_rb = get_clues(col, clues, is_row=False)
         is_valid_col = is_clue_satisfied(column(cand_board, col), *clue_lt_rb)
@@ -225,7 +233,6 @@ def is_valid(cand, coord, board, clues):
         #    print(cand_board)
         #    print(clue_lt_rb)
         #    print()
-
         return cand_board
     else:
         return None
@@ -258,8 +265,8 @@ def solve_puzzle(clues, board=None, obvious=True):
                 continue
         return False
 
-def solve_puzzle_smart(clues, board=None, cell_order=[], obvious=True):
-    #print('hi')
+def solve_puzzle_smart(clues, board=None, cell_order=[], value_options={}, obvious=True):
+    print('hi')
     n = len(clues) // 4
     if not board:
         if obvious:
@@ -270,7 +277,7 @@ def solve_puzzle_smart(clues, board=None, cell_order=[], obvious=True):
     if cell_order == []:
         # TODO: calls this when board is complete
         # TODO: repeats obvious calculations
-        cell_order = smart_cell_order(board, clues, obvious=obvious)
+        cell_order, value_options = smart_cell_order(board, clues, obvious=obvious)
         #print(cell_order)
         #print(len(cell_order))
         #print(board)
@@ -281,12 +288,14 @@ def solve_puzzle_smart(clues, board=None, cell_order=[], obvious=True):
     else:
         #print(cell_order)
         coord = cell_order[0]
-        for cand in range(1, n+1):
+        for cand in value_options[coord]:#range(1, n+1):
             cand_board = is_valid(cand, coord, board, clues)
             if cand_board is not None:
                 #print(cand_board)
+                value_options_ = update_possible_values(coord, cand, n, value_options)
                 next_board = solve_puzzle_smart(clues, board=cand_board,
                                                 cell_order=cell_order[1:],
+                                                value_options=value_options_,
                                                 obvious=obvious)
                 if next_board:
                     return next_board
@@ -376,14 +385,14 @@ if __name__ == "__main__":
     #correct = s == outcomes4[1]
     #print(correct)
 
-    s = solve_puzzle_smart(clues6[0], obvious=True)
-    correct = s == outcomes6[0]
-    print(correct)
+    #s = solve_puzzle_smart(clues6[0], obvious=True)
+    #correct = s == outcomes6[0]
+    #print(correct)
     s = solve_puzzle_smart(clues6[1], obvious=True)
     correct = s == outcomes6[1]
     print(correct)
-    s = solve_puzzle_smart(clues6[2], obvious=True)
-    correct = s == outcomes6[2]
-    print(correct)
+    #s = solve_puzzle_smart(clues6[2], obvious=True)
+    #correct = s == outcomes6[2]
+    #print(correct)
 
 
